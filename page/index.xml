@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Page-rsses on David Stanek&#39;s Digressions</title>
+    <link>http://dstanek.com/page/index.xml</link>
+    <description>Recent content in Page-rsses on David Stanek&#39;s Digressions</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <atom:link href="http://dstanek.com/page/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title></title>
+      <link>http://dstanek.com/page/bio/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://dstanek.com/page/bio/</guid>
+      <description>
+
+&lt;h2 id=&#34;short-bio&#34;&gt;Short Bio&lt;/h2&gt;
+
+&lt;p&gt;David Stanek has been developing software professionally for over 19 years. He is currently
+a Software Engineer at &lt;a href=&#34;http://www.rackspace.com/&#34;&gt;Rackspace&lt;/a&gt;. Python has been his language of choice for over 15
+years both on and off of the job.&lt;/p&gt;
+
+&lt;p&gt;David spends much of his free work time working on open source projects and sharpening his
+technical skills. He helps organize the &lt;a href=&#34;http://clepy.org&#34;&gt;Cleveland Area Python Interest Group&lt;/a&gt;. He&amp;rsquo;s also
+a cofounder and cohost of &lt;a href=&#34;http://clepy.org&#34;&gt;From Python Import Podcast&lt;/a&gt;. He enjoys reading technical books
+and listening to a variety of podcasts and audio books. Google him for more information.&lt;/p&gt;
+
+&lt;p&gt;When he&amp;rsquo;s not working he enjoys spending time with his beautiful wife and 4 wonderful children&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://dstanek.com/page/coding/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://dstanek.com/page/coding/</guid>
+      <description>
+
+&lt;h2 id=&#34;software-craftsmanship&#34;&gt;Software Craftsmanship&lt;/h2&gt;
+
+&lt;p&gt;Your business is important to you. Together we can combine your business expertise and
+ my technical expertise to build software that gives you a competitive advantage.&lt;/p&gt;
+
+&lt;p&gt;I believe very strongly in using best practices to create software.  Best practices such
+as agile development techniques and test driven development allow me to build high
+ quality, flexible software.&lt;/p&gt;
+
+&lt;p&gt;I&amp;rsquo;d love to talk to you about any of your development needs.&lt;/p&gt;
+
+&lt;h2 id=&#34;coding-samples&#34;&gt;Coding Samples&lt;/h2&gt;
+
+&lt;p&gt;Below I have collected a few links that show some of my Open Source contributions.
+Unfortunately I spent the first 15 years of my career working on propietary code
+that I&amp;rsquo;m not legally allowed to show.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;http://www.ohloh.net/accounts/dstanek/positions&#34;&gt;Profile on Ohloh&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://bitbucket.org/dstanek/&#34;&gt;Projects on Bitbucket&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://github.com/dstanek&#34;&gt;Project on Github&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://dstanek.com/page/speaking/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://dstanek.com/page/speaking/</guid>
+      <description>&lt;p&gt;I have had the opportunity to give talks at several high profile events. These
+experiences have had a profound impact on my career and personal development. I
+look forward to speaking more in the future.&lt;/p&gt;
+
+&lt;table id=&#34;speaking-engagements&#34; summary=&#34;Speaking Engagements&#34;&gt;
+  &lt;thead&gt;
+    &lt;tr class=&#34;header-row&#34;&gt;
+      &lt;th&gt;Event&lt;/th&gt;&lt;th&gt;Topic&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+        &lt;td&gt;PyCon&amp;nbsp;2006&lt;/td&gt;
+        &lt;td&gt;
+            &lt;a href=&#34;http://wiki.python.org/moin/PyCon2006/Talks#line-565&#34;&gt;
+                Python Can Survive In The Enterprise
+            &lt;/a&gt;
+        &lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;CodeMash&amp;nbsp;2007&lt;/td&gt;
+        &lt;td&gt;Enterprise Python Architecture&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;CodeMash&amp;nbsp;2007&lt;/td&gt;
+        &lt;td&gt;Web Services in Python&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;CodeMash&amp;nbsp;2008&lt;/td&gt;
+        &lt;td&gt;Design Patterns The Python Way&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;PyOhio&amp;nbsp;2009&lt;/td&gt;
+        &lt;td&gt;Dependency Injection in Python w/ snake-guice&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;CodeMash&amp;nbsp;2013&lt;/td&gt;
+        &lt;td&gt;Full-day tutorial: &amp;nbsp;Web Development with Python and Django&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;PyCon&amp;nbsp;2013&lt;/td&gt;
+        &lt;td&gt;Half-day tutorial: &amp;nbsp;Shiny, Let&#39;s Be Bad Guys&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;PyOhio&amp;nbsp;2013&lt;/td&gt;
+        &lt;td&gt;Half-day tutorial: &amp;nbsp;Shiny, Let&#39;s Be Bad Guys&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;CodeMash&amp;nbsp;2014&lt;/td&gt;
+        &lt;td&gt;Full-day tutorial: &amp;nbsp;Web Development with Python and Django&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;CodeMash&amp;nbsp;2015&lt;/td&gt;
+        &lt;td&gt;Half-day tutorial: &amp;nbsp;Python Koans: An Introduction To Python&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;CodeMash&amp;nbsp;2015&lt;/td&gt;
+        &lt;td&gt;Half-day tutorial: &amp;nbsp;Web Development with Python and Django
+            (I mostly just helped with setup for Mike Pirnat)&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;PyCon&amp;nbsp;2015&amp;nbsp;&amp;nbsp;(April&amp;nbsp;8th)&lt;/td&gt;
+        &lt;td&gt;Half-day tutorial: &amp;nbsp;Shiny, Let&#39;s Be Bad Guys&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;Stirtrek&amp;nbsp;2015&amp;nbsp;&amp;nbsp;(May&amp;nbsp;1st)&lt;/td&gt;
+        &lt;td&gt;Getting Started As An OpenStack Contributor&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

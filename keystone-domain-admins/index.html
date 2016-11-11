@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>Unleashing Keystone Domain Admins &middot; David Stanek</title>
+        <meta name="description" content="Once upon a time OpenStack had one big grouping of users and projects that were managed by a centralized administration group. Nice and simple for small, single organization clouds. As the use of OpenStack expanded there was a need to have multiple different groupings of users and projects (domains) in a single cloud. Some examples include a public cloud hosting multiple customers and a large private cloud wanting to isolate resources by department. This opens up the opportunity for the administration of the domains to be pushed out of the centralized administration group and into the domain itself.
+
+">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="generator" content="Hugo 0.17" />
+        <meta name="robots" content="index,follow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta property="og:title" content="Unleashing Keystone Domain Admins">
+<meta property="og:description" content="Once upon a time OpenStack had one big grouping of users and projects that were managed by a centralized administration group. Nice and simple for small, single organization clouds. As the use of OpenStack expanded there was a need to have multiple different groupings of users and projects (domains) in a single cloud. Some examples include a public cloud hosting multiple customers and a large private cloud wanting to isolate resources by department. This opens up the opportunity for the administration of the domains to be pushed out of the centralized administration group and into the domain itself.
+
+">
+<meta property="og:type" content="article">
+<meta property="og:url" content="http://dstanek.com/keystone-domain-admins/">
+        <link rel="stylesheet" href="http://dstanek.com/css/normalize.css">
+        <link rel="stylesheet" href="http://dstanek.com/css/highlight.css">
+        <link rel="stylesheet" href="http://dstanek.com/css/style.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&subset=latin,cyrillic-ext,latin-ext,cyrillic">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css">
+    </head>
+    <body>
+        
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-82763-5', 'auto');
+ga('send', 'pageview');
+</script>
+
+
+        <div id="wrapper">
+            <header class="site-header">
+                <div class="container">
+                    <div class="site-title-wrapper">
+                        
+                            <h1 class="site-title">
+                                <a title="David Stanek&#39;s Digressions" href="http://dstanek.com/">David Stanek&#39;s Digressions</a>
+                            </h1>
+                        
+                        <a class="button-square" href="http://dstanek.com/index.xml"><i class="fa fa-rss"></i></a>
+                        
+                            <a class="button-square button-social hint--top" data-hint="Twitter" title="Twitter" href="https://twitter.com/dstanek">
+                                <i class="fa fa-twitter"></i>
+                            </a>
+                        
+                        
+                        
+                            <a class="button-square button-social hint--top" data-hint="Github" title="Github" href="https://github.com/dstanek">
+                                <i class="fa fa-github-alt"></i>
+                            </a>
+                        
+                        
+                            <a class="button-square button-social hint--top" data-hint="Stack Overflow" title="Stack Overflow" href="https://stackoverflow.com/users/877078/dstanek">
+                                <i class="fa fa-stack-overflow"></i>
+                            </a>
+                        
+                        
+                            <a class="button-square button-social hint--top" data-hint="LinkedIn" title="LinkedIn" href="https://linkedin.com/in/dstanek/">
+                                <i class="fa fa-linkedin"></i>
+                            </a>
+                        
+                        
+                    </div>
+
+                    <ul class="site-nav">
+                        
+    <li class="site-nav-item">
+        <a title="Blog" href="/">Blog</a>
+    </li>
+
+    <li class="site-nav-item">
+        <a title="Bio" href="/page/bio/">Bio</a>
+    </li>
+
+    <li class="site-nav-item">
+        <a title="Coding" href="/page/coding/">Coding</a>
+    </li>
+
+    <li class="site-nav-item">
+        <a title="Speaking" href="/page/speaking/">Speaking</a>
+    </li>
+
+                    </ul>
+                </div>
+            </header>
+
+            <div id="container">
+
+
+<div class="container">
+    <article class="post-container" itemscope="" itemtype="http://schema.org/BlogPosting">
+        <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Unleashing Keystone Domain Admins</h1>
+    
+    <p class="post-date">
+        <span>Published <time datetime="2016-11-04" itemprop="datePublished">Fri, Nov 4, 2016</time></span>
+    </p>
+</header>
+
+
+        <div class="post-content clearfix" itemprop="articleBody">
+    
+
+    <p>Once upon a time OpenStack had one big grouping of users and projects that were managed by a centralized administration group. Nice and simple for small, single organization clouds. As the use of OpenStack expanded there was a need to have multiple different groupings of users and projects (domains) in a single cloud. Some examples include a public cloud hosting multiple customers and a large private cloud wanting to isolate resources by department. This opens up the opportunity for the administration of the domains to be pushed out of the centralized administration group and into the domain itself.</p>
+
+<p></p>
+
+<p>Let&rsquo;s get a little terminology out of the way. A <em>cloud admin</em> is a cloud user that can perform any operation on a given cloud. A <em>domain admin</em> is a cloud user that can perform operations only within the domain where they have the admin role. A <em>domain member</em> is a regular user that has access to a cloud. This post will focus on the domain admin concept.</p>
+
+<h2 id="prerequisites">Prerequisites</h2>
+
+<p>This post was tested against a brand new devstack instance. The easiest way to follow along is to create a devstack instance and execute the commands documented below. This will allow you to try it out and experiment a little before you go and start testing against a real cloud.</p>
+
+<p>All of the commands used in this post will use the <a href="https://pypi.python.org/pypi/python-openstackclient">OpenStack Client</a> and the <a href="http://docs.openstack.org/developer/os-cloud-config/">os-cloud-config</a> YAML config created by devstack. It&rsquo;s possible to use the old style environment variables if you are feeling nostalgic.</p>
+
+<p>My devstack instance was created on Fedora by the fedora user (i.e. running <code>stack.sh</code> as the fedora user). When I run the commands below I do it as that user.</p>
+
+<p>You will also need to disable the v2 API in keystone. The v2 API isn&rsquo;t domain aware and will no longer work with the policy used below.</p>
+
+<h2 id="setup">Setup</h2>
+
+<p>Let&rsquo;s start by setting up some test data:</p>
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span>$ openstack --os-cloud devstack-admin domain create accounting
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description |                                  |
+| enabled     | True                             |
+| id          | 3d93bdce22e44d4da6641b68ff0751cb |
+| name        | accounting                       |
++-------------+----------------------------------+
+
+$ openstack --os-cloud devstack-admin domain create devops
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description |                                  |
+| enabled     | True                             |
+| id          | a3682f37c4a54c4487133928cb61b801 |
+| name        | devops                           |
++-------------+----------------------------------+
+
+$ openstack --os-cloud devstack-admin group create --domain devops devops_admins
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description |                                  |
+| domain_id   | a3682f37c4a54c4487133928cb61b801 |
+| id          | 795205cec7064786a5d3230654a927a1 |
+| name        | devops_admins                    |
++-------------+----------------------------------+
+
+$ openstack --os-cloud devstack-admin user create --domain devops --password password hackstar
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | a3682f37c4a54c4487133928cb61b801 |
+| enabled             | True                             |
+| id                  | 3b85f8774a224c069b1d501a5700adf4 |
+| name                | hackstar                         |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack --os-cloud devstack-admin group add user devops_admins hackstar
+hackstar added to group devops_admins
+
+$ openstack --os-cloud devstack-admin role add --group devops_admins --domain devops admin
+</pre></div>
+
+<p>We&rsquo;ve now created a simple structure based on two domains <em>accounting</em> and <em>devops</em>. The <em>devops</em> domain is getting a group named <em>devops_admins</em> that has the <em>admin</em> role. A user <em>hackstar</em> was created in the domain and added to the group. So let&rsquo;s try to get our domain admin working. The <em>accounting</em> domain was created just to prove out our policy.</p>
+
+<h2 id="policy">Policy</h2>
+
+<p>The default keystone policy is still enforces that old, crusty single grouping of users. It just distinguishes between <em>admin</em> and <em>member</em> roles. keystone also has a sample policy for that is designed to be used with a domain-based v3 cloud.</p>
+
+<p>We need to use this policy so we&rsquo;ll just copy it over. In a real cloud this isn&rsquo;t as easy to do. You&rsquo;ll want to evaluate the changes to the rules and reconcile them with any changes you&rsquo;ve made.</p>
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span>$ cp /opt/stack/keystone/etc/policy.v3cloudsample.json /etc/keystone/policy.json
+$ sudo systemctl restart httpd.service
+</pre></div>
+
+<p>If you&rsquo;re running ubuntu you will use <code>sudo service apache2 restart</code> to restart Apache.</p>
+
+<p>We&rsquo;re also going to want to use our new <code>hackstar</code> account to query our cloud. Let&rsquo;s add another entry into <code>/etc/openstack/clouds.yaml</code> to more easily facilitate this.</p>
+
+<p>I added the following section to the bottom of that file. Watch your indentation!</p>
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span>  devops-admin:
+    auth:
+      auth_url: http://162.209.99.157/identity_admin
+      password: password
+      domain_name: devops
+      user_domain_name: devops
+      username: hackstar
+    identity_api_version: <span style="color: #7F8C8D">&#39;3&#39;</span>
+    region_name: RegionOne
+    volume_api_version: <span style="color: #7F8C8D">&#39;2&#39;</span>
+</pre></div>
+
+<p>To test out our new entry we can simply try to get a new token:</p>
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span>$ openstack --os-cloud devops-admin token issue
++---------+---------------------------------------------------------------------------------------------------------------------------------+
+| Field   | Value                                                                                                                           |
++---------+---------------------------------------------------------------------------------------------------------------------------------+
+| expires | 2016-11-08T16:35:12+0000                                                                                                        |
+| id      | gAAAAABYIfCwjDJX-Wd61shlPcUtlR0mgswxjwkiRYhZvQ0ZsXpV7cvASDwAcBdkiMK-xYQMS_DN1h_XUshMabDJT97pm7EX15s--                           |
+|         | PfPP4sRyTHBXTwd80EMR7SldzAp1z_bv0UY4CMEIVdsrB4aSOhb2OR9oVaZYw                                                                   |
+| user_id | 3b85f8774a224c069b1d501a5700adf4                                                                                                |
++---------+---------------------------------------------------------------------------------------------------------------------------------+
+</pre></div>
+
+<p>If you get a token then you are in good shape. If not you&rsquo;ll have to do a little debugging to figure out if you didn&rsquo;t properly edit the clouds.yaml file or if you didn&rsquo;t properly setup the organization.</p>
+
+<h2 id="testing-it-out">Testing it out</h2>
+
+<p>Now that we have this all working we can start administering the domain.</p>
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span>$ openstack --os-cloud devops-admin user list
+You are not authorized to perform the requested action: identity:list_users <span style="color: #434f54">(</span>HTTP 403<span style="color: #434f54">)</span> <span style="color: #434f54">(</span>Request-ID: req-8626104f-0501-46a4-b207-93771a83d025<span style="color: #434f54">)</span>
+</pre></div>
+
+<p>Whoa, what happened there? It turn out it&rsquo;s just our <code>policy.json</code> protecting us. To list users you have to either be a cloud admin or you have to have the admin role and be scoped to the domain you want to list.</p>
+
+<p>Let&rsquo;s specifically ask for a list of users in our domain:</p>
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span>$ openstack --os-cloud devops-admin user list --domain a3682f37c4a54c4487133928cb61b801
+
++----------------------------------+----------+
+| ID                               | Name     |
++----------------------------------+----------+
+| 3b85f8774a224c069b1d501a5700adf4 | hackstar |
++----------------------------------+----------+
+</pre></div>
+
+<p>There we go. You have a domain admin. Let&rsquo;s do a few more simple tests.</p>
+
+<p><strong>NOTE:</strong> <em>We had to specify the domain ID and not the domain name in the command. Since our policy is actually checking the domain ID as passed in through the API you <strong>must</strong> use the ID.</em></p>
+
+<p>The policy won&rsquo;t let us create users in domains where we do not have the admin role.</p>
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span>$ openstack --os-cloud devops-admin user create --domain accounting --password password frank
+You are not authorized to perform the requested action: identity:create_user <span style="color: #434f54">(</span>HTTP 403<span style="color: #434f54">)</span> <span style="color: #434f54">(</span>Request-ID: req-46aa043b-a059-4a74-8958-e351da6927eb<span style="color: #434f54">)</span>
+</pre></div>
+
+<p>We do, however, have the ability to create our own users.</p>
+<div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span>$ openstack --os-cloud devops-admin user create --domain a3682f37c4a54c4487133928cb61b801 --password password frank
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | a3682f37c4a54c4487133928cb61b801 |
+| enabled             | True                             |
+| id                  | f64fc48a24c743efbe6f3664fc3f2726 |
+| name                | frank                            |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+</pre></div>
+
+<p><strong>NOTE:</strong> <em>We had to use the domain ID again.</em></p>
+
+<p>This should be enough to get you going. Give it a try.</p>
+</div>
+
+        <footer class="post-footer clearfix">
+    
+        <p class="post-tags">
+            <span>Tagged:</span>
+            
+                 <a href="/tags/openstack/">#openstack</a>
+            
+                 <a href="/tags/keystone/">#keystone</a>
+            
+        </p>
+    
+
+    <div class="share">
+        <a class="icon-twitter" href="https://twitter.com/share?text=Unleashing%20Keystone%20Domain%20Admins&url=http%3a%2f%2fdstanek.com%2fkeystone-domain-admins%2f"
+            onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+            <i class="fa fa-twitter"></i>
+            <span class="hidden">Twitter</span>
+        </a>
+
+        <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http%3a%2f%2fdstanek.com%2fkeystone-domain-admins%2f"
+            onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+            <i class="fa fa-facebook"></i>
+            <span class="hidden">Facebook</span>
+        </a>
+
+        <a class="icon-google-plus" href="https://plus.google.com/share?url=http%3a%2f%2fdstanek.com%2fkeystone-domain-admins%2f"
+           onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+           <i class="fa fa-google-plus"></i>
+            <span class="hidden">Google+</span>
+        </a>
+    </div>
+</footer>
+
+
+        
+    <div class="comments">
+        <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'davidstaneksdigressions';
+    var disqus_identifier = 'http:\/\/dstanek.com\/keystone-domain-admins\/';
+    var disqus_title = 'Unleashing Keystone Domain Admins';
+    var disqus_url = 'http:\/\/dstanek.com\/keystone-domain-admins\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+
+    </article>
+</div>
+
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="site-title-wrapper">
+                    <h1 class="site-title">
+                        <a title="David Stanek&#39;s Digressions" href="http://dstanek.com/">David Stanek&#39;s Digressions</a>
+                    </h1>
+                    <a class="button-square button-jump-top js-jump-top" href="#">
+                        <i class="fa fa-angle-up"></i>
+                    </a>
+                </div>
+
+                <p class="footer-copyright">
+                    <span>&copy; 2016 David Stanek</span>
+                </p>
+                <p class="footer-copyright">
+                    <span>This site content, unless otherwise noted, is licensed under a <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en_US">
+Attribution-NonCommercial-ShareAlike&nbsp;4.0&nbsp;International&nbsp;(CC&nbsp;BY-NC-SA&nbsp;4.0)</a> license.
+                    </span>
+                </p>
+            </div>
+        </footer>
+
+        <script src="http://dstanek.com/js/jquery-1.11.3.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.5/highlight.min.js"></script>
+        <script src="http://dstanek.com/js/jquery.fitvids.js"></script>
+        <script src="http://dstanek.com/js/scripts.js"></script>
+    </body>
+</html>
+

@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>David Stanek&#39;s Digressions</title>
+    <link>http://dstanek.com/index.xml</link>
+    <description>Recent content on David Stanek&#39;s Digressions</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 04 Nov 2016 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://dstanek.com/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Unleashing Keystone Domain Admins</title>
+      <link>http://dstanek.com/keystone-domain-admins/</link>
+      <pubDate>Fri, 04 Nov 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://dstanek.com/keystone-domain-admins/</guid>
+      <description>&lt;p&gt;Once upon a time OpenStack had one big grouping of users and projects that were managed by a centralized administration group. Nice and simple for small, single organization clouds. As the use of OpenStack expanded there was a need to have multiple different groupings of users and projects (domains) in a single cloud. Some examples include a public cloud hosting multiple customers and a large private cloud wanting to isolate resources by department. This opens up the opportunity for the administration of the domains to be pushed out of the centralized administration group and into the domain itself.&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p&gt;Let&amp;rsquo;s get a little terminology out of the way. A &lt;em&gt;cloud admin&lt;/em&gt; is a cloud user that can perform any operation on a given cloud. A &lt;em&gt;domain admin&lt;/em&gt; is a cloud user that can perform operations only within the domain where they have the admin role. A &lt;em&gt;domain member&lt;/em&gt; is a regular user that has access to a cloud. This post will focus on the domain admin concept.&lt;/p&gt;
+
+&lt;h2 id=&#34;prerequisites&#34;&gt;Prerequisites&lt;/h2&gt;
+
+&lt;p&gt;This post was tested against a brand new devstack instance. The easiest way to follow along is to create a devstack instance and execute the commands documented below. This will allow you to try it out and experiment a little before you go and start testing against a real cloud.&lt;/p&gt;
+
+&lt;p&gt;All of the commands used in this post will use the &lt;a href=&#34;https://pypi.python.org/pypi/python-openstackclient&#34;&gt;OpenStack Client&lt;/a&gt; and the &lt;a href=&#34;http://docs.openstack.org/developer/os-cloud-config/&#34;&gt;os-cloud-config&lt;/a&gt; YAML config created by devstack. It&amp;rsquo;s possible to use the old style environment variables if you are feeling nostalgic.&lt;/p&gt;
+
+&lt;p&gt;My devstack instance was created on Fedora by the fedora user (i.e. running &lt;code&gt;stack.sh&lt;/code&gt; as the fedora user). When I run the commands below I do it as that user.&lt;/p&gt;
+
+&lt;p&gt;You will also need to disable the v2 API in keystone. The v2 API isn&amp;rsquo;t domain aware and will no longer work with the policy used below.&lt;/p&gt;
+
+&lt;h2 id=&#34;setup&#34;&gt;Setup&lt;/h2&gt;
+
+&lt;p&gt;Let&amp;rsquo;s start by setting up some test data:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;$ openstack --os-cloud devstack-admin domain create accounting
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description |                                  |
+| enabled     | True                             |
+| id          | 3d93bdce22e44d4da6641b68ff0751cb |
+| name        | accounting                       |
++-------------+----------------------------------+
+
+$ openstack --os-cloud devstack-admin domain create devops
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description |                                  |
+| enabled     | True                             |
+| id          | a3682f37c4a54c4487133928cb61b801 |
+| name        | devops                           |
++-------------+----------------------------------+
+
+$ openstack --os-cloud devstack-admin group create --domain devops devops_admins
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description |                                  |
+| domain_id   | a3682f37c4a54c4487133928cb61b801 |
+| id          | 795205cec7064786a5d3230654a927a1 |
+| name        | devops_admins                    |
++-------------+----------------------------------+
+
+$ openstack --os-cloud devstack-admin user create --domain devops --password password hackstar
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | a3682f37c4a54c4487133928cb61b801 |
+| enabled             | True                             |
+| id                  | 3b85f8774a224c069b1d501a5700adf4 |
+| name                | hackstar                         |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack --os-cloud devstack-admin group add user devops_admins hackstar
+hackstar added to group devops_admins
+
+$ openstack --os-cloud devstack-admin role add --group devops_admins --domain devops admin
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;We&amp;rsquo;ve now created a simple structure based on two domains &lt;em&gt;accounting&lt;/em&gt; and &lt;em&gt;devops&lt;/em&gt;. The &lt;em&gt;devops&lt;/em&gt; domain is getting a group named &lt;em&gt;devops_admins&lt;/em&gt; that has the &lt;em&gt;admin&lt;/em&gt; role. A user &lt;em&gt;hackstar&lt;/em&gt; was created in the domain and added to the group. So let&amp;rsquo;s try to get our domain admin working. The &lt;em&gt;accounting&lt;/em&gt; domain was created just to prove out our policy.&lt;/p&gt;
+
+&lt;h2 id=&#34;policy&#34;&gt;Policy&lt;/h2&gt;
+
+&lt;p&gt;The default keystone policy is still enforces that old, crusty single grouping of users. It just distinguishes between &lt;em&gt;admin&lt;/em&gt; and &lt;em&gt;member&lt;/em&gt; roles. keystone also has a sample policy for that is designed to be used with a domain-based v3 cloud.&lt;/p&gt;
+
+&lt;p&gt;We need to use this policy so we&amp;rsquo;ll just copy it over. In a real cloud this isn&amp;rsquo;t as easy to do. You&amp;rsquo;ll want to evaluate the changes to the rules and reconcile them with any changes you&amp;rsquo;ve made.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;$ cp /opt/stack/keystone/etc/policy.v3cloudsample.json /etc/keystone/policy.json
+$ sudo systemctl restart httpd.service
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;If you&amp;rsquo;re running ubuntu you will use &lt;code&gt;sudo service apache2 restart&lt;/code&gt; to restart Apache.&lt;/p&gt;
+
+&lt;p&gt;We&amp;rsquo;re also going to want to use our new &lt;code&gt;hackstar&lt;/code&gt; account to query our cloud. Let&amp;rsquo;s add another entry into &lt;code&gt;/etc/openstack/clouds.yaml&lt;/code&gt; to more easily facilitate this.&lt;/p&gt;
+
+&lt;p&gt;I added the following section to the bottom of that file. Watch your indentation!&lt;/p&gt;
+&lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;  devops-admin:
+    auth:
+      auth_url: http://162.209.99.157/identity_admin
+      password: password
+      domain_name: devops
+      user_domain_name: devops
+      username: hackstar
+    identity_api_version: &lt;span style=&#34;color: #7F8C8D&#34;&gt;&amp;#39;3&amp;#39;&lt;/span&gt;
+    region_name: RegionOne
+    volume_api_version: &lt;span style=&#34;color: #7F8C8D&#34;&gt;&amp;#39;2&amp;#39;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;To test out our new entry we can simply try to get a new token:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;$ openstack --os-cloud devops-admin token issue
++---------+---------------------------------------------------------------------------------------------------------------------------------+
+| Field   | Value                                                                                                                           |
++---------+---------------------------------------------------------------------------------------------------------------------------------+
+| expires | 2016-11-08T16:35:12+0000                                                                                                        |
+| id      | gAAAAABYIfCwjDJX-Wd61shlPcUtlR0mgswxjwkiRYhZvQ0ZsXpV7cvASDwAcBdkiMK-xYQMS_DN1h_XUshMabDJT97pm7EX15s--                           |
+|         | PfPP4sRyTHBXTwd80EMR7SldzAp1z_bv0UY4CMEIVdsrB4aSOhb2OR9oVaZYw                                                                   |
+| user_id | 3b85f8774a224c069b1d501a5700adf4                                                                                                |
++---------+---------------------------------------------------------------------------------------------------------------------------------+
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;If you get a token then you are in good shape. If not you&amp;rsquo;ll have to do a little debugging to figure out if you didn&amp;rsquo;t properly edit the clouds.yaml file or if you didn&amp;rsquo;t properly setup the organization.&lt;/p&gt;
+
+&lt;h2 id=&#34;testing-it-out&#34;&gt;Testing it out&lt;/h2&gt;
+
+&lt;p&gt;Now that we have this all working we can start administering the domain.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;$ openstack --os-cloud devops-admin user list
+You are not authorized to perform the requested action: identity:list_users &lt;span style=&#34;color: #434f54&#34;&gt;(&lt;/span&gt;HTTP 403&lt;span style=&#34;color: #434f54&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color: #434f54&#34;&gt;(&lt;/span&gt;Request-ID: req-8626104f-0501-46a4-b207-93771a83d025&lt;span style=&#34;color: #434f54&#34;&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Whoa, what happened there? It turn out it&amp;rsquo;s just our &lt;code&gt;policy.json&lt;/code&gt; protecting us. To list users you have to either be a cloud admin or you have to have the admin role and be scoped to the domain you want to list.&lt;/p&gt;
+
+&lt;p&gt;Let&amp;rsquo;s specifically ask for a list of users in our domain:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;$ openstack --os-cloud devops-admin user list --domain a3682f37c4a54c4487133928cb61b801
+
++----------------------------------+----------+
+| ID                               | Name     |
++----------------------------------+----------+
+| 3b85f8774a224c069b1d501a5700adf4 | hackstar |
++----------------------------------+----------+
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;There we go. You have a domain admin. Let&amp;rsquo;s do a few more simple tests.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;NOTE:&lt;/strong&gt; &lt;em&gt;We had to specify the domain ID and not the domain name in the command. Since our policy is actually checking the domain ID as passed in through the API you &lt;strong&gt;must&lt;/strong&gt; use the ID.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;The policy won&amp;rsquo;t let us create users in domains where we do not have the admin role.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;$ openstack --os-cloud devops-admin user create --domain accounting --password password frank
+You are not authorized to perform the requested action: identity:create_user &lt;span style=&#34;color: #434f54&#34;&gt;(&lt;/span&gt;HTTP 403&lt;span style=&#34;color: #434f54&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color: #434f54&#34;&gt;(&lt;/span&gt;Request-ID: req-46aa043b-a059-4a74-8958-e351da6927eb&lt;span style=&#34;color: #434f54&#34;&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;We do, however, have the ability to create our own users.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;$ openstack --os-cloud devops-admin user create --domain a3682f37c4a54c4487133928cb61b801 --password password frank
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | a3682f37c4a54c4487133928cb61b801 |
+| enabled             | True                             |
+| id                  | f64fc48a24c743efbe6f3664fc3f2726 |
+| name                | frank                            |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;NOTE:&lt;/strong&gt; &lt;em&gt;We had to use the domain ID again.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;This should be enough to get you going. Give it a try.&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://dstanek.com/page/bio/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://dstanek.com/page/bio/</guid>
+      <description>
+
+&lt;h2 id=&#34;short-bio&#34;&gt;Short Bio&lt;/h2&gt;
+
+&lt;p&gt;David Stanek has been developing software professionally for over 19 years. He is currently
+a Software Engineer at &lt;a href=&#34;http://www.rackspace.com/&#34;&gt;Rackspace&lt;/a&gt;. Python has been his language of choice for over 15
+years both on and off of the job.&lt;/p&gt;
+
+&lt;p&gt;David spends much of his free work time working on open source projects and sharpening his
+technical skills. He helps organize the &lt;a href=&#34;http://clepy.org&#34;&gt;Cleveland Area Python Interest Group&lt;/a&gt;. He&amp;rsquo;s also
+a cofounder and cohost of &lt;a href=&#34;http://clepy.org&#34;&gt;From Python Import Podcast&lt;/a&gt;. He enjoys reading technical books
+and listening to a variety of podcasts and audio books. Google him for more information.&lt;/p&gt;
+
+&lt;p&gt;When he&amp;rsquo;s not working he enjoys spending time with his beautiful wife and 4 wonderful children&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://dstanek.com/page/coding/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://dstanek.com/page/coding/</guid>
+      <description>
+
+&lt;h2 id=&#34;software-craftsmanship&#34;&gt;Software Craftsmanship&lt;/h2&gt;
+
+&lt;p&gt;Your business is important to you. Together we can combine your business expertise and
+ my technical expertise to build software that gives you a competitive advantage.&lt;/p&gt;
+
+&lt;p&gt;I believe very strongly in using best practices to create software.  Best practices such
+as agile development techniques and test driven development allow me to build high
+ quality, flexible software.&lt;/p&gt;
+
+&lt;p&gt;I&amp;rsquo;d love to talk to you about any of your development needs.&lt;/p&gt;
+
+&lt;h2 id=&#34;coding-samples&#34;&gt;Coding Samples&lt;/h2&gt;
+
+&lt;p&gt;Below I have collected a few links that show some of my Open Source contributions.
+Unfortunately I spent the first 15 years of my career working on propietary code
+that I&amp;rsquo;m not legally allowed to show.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;http://www.ohloh.net/accounts/dstanek/positions&#34;&gt;Profile on Ohloh&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://bitbucket.org/dstanek/&#34;&gt;Projects on Bitbucket&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://github.com/dstanek&#34;&gt;Project on Github&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://dstanek.com/page/speaking/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://dstanek.com/page/speaking/</guid>
+      <description>&lt;p&gt;I have had the opportunity to give talks at several high profile events. These
+experiences have had a profound impact on my career and personal development. I
+look forward to speaking more in the future.&lt;/p&gt;
+
+&lt;table id=&#34;speaking-engagements&#34; summary=&#34;Speaking Engagements&#34;&gt;
+  &lt;thead&gt;
+    &lt;tr class=&#34;header-row&#34;&gt;
+      &lt;th&gt;Event&lt;/th&gt;&lt;th&gt;Topic&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+        &lt;td&gt;PyCon&amp;nbsp;2006&lt;/td&gt;
+        &lt;td&gt;
+            &lt;a href=&#34;http://wiki.python.org/moin/PyCon2006/Talks#line-565&#34;&gt;
+                Python Can Survive In The Enterprise
+            &lt;/a&gt;
+        &lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;CodeMash&amp;nbsp;2007&lt;/td&gt;
+        &lt;td&gt;Enterprise Python Architecture&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;CodeMash&amp;nbsp;2007&lt;/td&gt;
+        &lt;td&gt;Web Services in Python&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;CodeMash&amp;nbsp;2008&lt;/td&gt;
+        &lt;td&gt;Design Patterns The Python Way&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;PyOhio&amp;nbsp;2009&lt;/td&gt;
+        &lt;td&gt;Dependency Injection in Python w/ snake-guice&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;CodeMash&amp;nbsp;2013&lt;/td&gt;
+        &lt;td&gt;Full-day tutorial: &amp;nbsp;Web Development with Python and Django&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;PyCon&amp;nbsp;2013&lt;/td&gt;
+        &lt;td&gt;Half-day tutorial: &amp;nbsp;Shiny, Let&#39;s Be Bad Guys&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;PyOhio&amp;nbsp;2013&lt;/td&gt;
+        &lt;td&gt;Half-day tutorial: &amp;nbsp;Shiny, Let&#39;s Be Bad Guys&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;CodeMash&amp;nbsp;2014&lt;/td&gt;
+        &lt;td&gt;Full-day tutorial: &amp;nbsp;Web Development with Python and Django&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;CodeMash&amp;nbsp;2015&lt;/td&gt;
+        &lt;td&gt;Half-day tutorial: &amp;nbsp;Python Koans: An Introduction To Python&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;CodeMash&amp;nbsp;2015&lt;/td&gt;
+        &lt;td&gt;Half-day tutorial: &amp;nbsp;Web Development with Python and Django
+            (I mostly just helped with setup for Mike Pirnat)&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;PyCon&amp;nbsp;2015&amp;nbsp;&amp;nbsp;(April&amp;nbsp;8th)&lt;/td&gt;
+        &lt;td&gt;Half-day tutorial: &amp;nbsp;Shiny, Let&#39;s Be Bad Guys&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;Stirtrek&amp;nbsp;2015&amp;nbsp;&amp;nbsp;(May&amp;nbsp;1st)&lt;/td&gt;
+        &lt;td&gt;Getting Started As An OpenStack Contributor&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
